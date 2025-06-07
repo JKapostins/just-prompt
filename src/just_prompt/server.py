@@ -19,6 +19,7 @@ from .molecules.prompt_from_file_to_file import prompt_from_file_to_file
 from .molecules.ceo_and_board_prompt import ceo_and_board_prompt, DEFAULT_CEO_MODEL
 from .molecules.list_providers import list_providers as list_providers_func
 from .molecules.list_models import list_models as list_models_func
+from .molecules.build_context import build_context
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -40,6 +41,7 @@ class JustPromptTools:
     CEO_AND_BOARD = "ceo_and_board"
     LIST_PROVIDERS = "list_providers"
     LIST_MODELS = "list_models"
+    BUILD_CONTEXT = "build_context"
 
 # Schema classes for MCP tools
 class PromptSchema(BaseModel):
@@ -86,6 +88,37 @@ class CEOAndBoardSchema(BaseModel):
     ceo_model: str = Field(
         default=DEFAULT_CEO_MODEL,
         description="Model to use for the CEO decision in format 'provider:model'"
+    )
+
+class BuildContextSchema(BaseModel):
+    directories: Optional[List[str]] = Field(
+        None, 
+        description="Optional list of directory paths to include in the context"
+    )
+    files: Optional[List[str]] = Field(
+        None, 
+        description="Optional list of specific file paths to include in the context"
+    )
+    output_file: str = Field(..., description="Path where the context file will be saved")
+    overview_text: Optional[str] = Field(
+        None, 
+        description="Optional overview text to include at the top"
+    )
+    summarize_model: Optional[str] = Field(
+        None, 
+        description="Optional model to use for file summarization (e.g., 'openai:gpt-4o-mini')"
+    )
+    ignore_patterns: Optional[List[str]] = Field(
+        None, 
+        description="Optional list of patterns to ignore (uses sensible defaults if not provided)"
+    )
+    base_directory: Optional[str] = Field(
+        None, 
+        description="Optional base directory for relative path calculation"
+    )
+    current_working_directory: Optional[str] = Field(
+        None, 
+        description="Optional current working directory to use for resolving relative paths"
     )
 
 
@@ -148,6 +181,11 @@ async def serve(default_models: str = DEFAULT_MODEL) -> None:
                 name=JustPromptTools.LIST_MODELS,
                 description="List all available models for a specific LLM provider",
                 inputSchema=ListModelsSchema.schema(),
+            ),
+            Tool(
+                name=JustPromptTools.BUILD_CONTEXT,
+                description="Build a context file from directories containing code files",
+                inputSchema=BuildContextSchema.schema(),
             ),
         ]
     
@@ -233,6 +271,32 @@ async def serve(default_models: str = DEFAULT_MODEL) -> None:
                 return [TextContent(
                     type="text",
                     text=f"Board responses and CEO decision saved.\nCEO prompt file: {ceo_prompt_file}\nCEO decision file: {ceo_decision_file}"
+                )]
+                
+            elif name == JustPromptTools.BUILD_CONTEXT:
+                directories = arguments.get("directories")
+                files = arguments.get("files")
+                output_file = arguments["output_file"]
+                overview_text = arguments.get("overview_text")
+                summarize_model = arguments.get("summarize_model")
+                ignore_patterns = arguments.get("ignore_patterns")
+                base_directory = arguments.get("base_directory")
+                current_working_directory = arguments.get("current_working_directory")
+                
+                context_file = build_context(
+                    directories=directories,
+                    files=files,
+                    output_file=output_file,
+                    overview_text=overview_text,
+                    summarize_model=summarize_model,
+                    ignore_patterns=ignore_patterns,
+                    base_directory=base_directory,
+                    current_working_directory=current_working_directory
+                )
+                
+                return [TextContent(
+                    type="text",
+                    text=f"Context file generated: {context_file}"
                 )]
                 
             else:

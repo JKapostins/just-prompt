@@ -41,6 +41,18 @@ The following MCP tools are available in the server:
   - Parameters:
     - `provider`: Provider to list models for (e.g., 'openai' or 'o')
 
+- **`build_context`**: Build a context file from directories containing code files
+  - Parameters:
+    - `directories` (optional): List of directory paths to include in the context
+    - `files` (optional): List of specific file paths to include in the context
+    - `output_file`: Path where the context file will be saved
+    - `overview_text` (optional): Overview text to include at the top
+    - `summarize_model` (optional): Model to use for file summarization (e.g., 'openai:gpt-4o-mini')
+    - `ignore_patterns` (optional): List of patterns to ignore (uses sensible defaults if not provided)
+    - `base_directory` (optional): Base directory for relative path calculation
+    - `current_working_directory` (optional): Current working directory to use for resolving relative paths
+  - **Use case**: This tool is particularly useful as a pre-step to calling `prompt_from_file_to_file`. For example, you might want to have several LLMs review your project documentation to ensure it's comprehensive and accurate. You can use this context builder to include all the files and folders that you want to have reviewed, then use the generated context file with `prompt_from_file_to_file` to get feedback from multiple models.
+
 ## Provider Prefixes
 > every model must be prefixed with the provider name
 >
