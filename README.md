@@ -51,6 +51,7 @@ The following MCP tools are available in the server:
     - `ignore_patterns` (optional): List of patterns to ignore (uses sensible defaults if not provided)
     - `base_directory` (optional): Base directory for relative path calculation
     - `current_working_directory` (optional): Current working directory to use for resolving relative paths
+    - `include_line_numbers` (default: True): Whether to include line numbers in file contents that map directly to source files
   - **Use case**: This tool is particularly useful as a pre-step to calling `prompt_from_file_to_file`. For example, you might want to have several LLMs review your project documentation to ensure it's comprehensive and accurate. You can use this context builder to include all the files and folders that you want to have reviewed, then use the generated context file with `prompt_from_file_to_file` to get feedback from multiple models.
 
 ## Provider Prefixes

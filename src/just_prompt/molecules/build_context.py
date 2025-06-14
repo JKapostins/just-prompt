@@ -271,25 +271,39 @@ def collect_files(directories: Optional[List[str]] = None, files: Optional[List[
     return sorted(list(set(collected_files)))
 
 
-def read_file_content(file_path: Path) -> str:
+def read_file_content(file_path: Path, include_line_numbers: bool = True) -> str:
     """
     Read the content of a file safely.
     
     Args:
         file_path: Path to the file
+        include_line_numbers: Whether to include line numbers in the output
         
     Returns:
         File content as string, or error message if read fails
     """
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
-            return f.read()
+            content = f.read()
+            if include_line_numbers:
+                lines = content.splitlines()
+                numbered_lines = []
+                for i, line in enumerate(lines, 1):
+                    numbered_lines.append(f"{i:>4}→{line}")
+                return '\n'.join(numbered_lines)
+            return content
     except UnicodeDecodeError:
         try:
             # Try with latin-1 encoding for binary-like files
             with open(file_path, 'r', encoding='latin-1') as f:
                 content = f.read()
                 if all(ord(c) < 128 for c in content[:100]):  # Check if mostly ASCII
+                    if include_line_numbers:
+                        lines = content.splitlines()
+                        numbered_lines = []
+                        for i, line in enumerate(lines, 1):
+                            numbered_lines.append(f"{i:>4}→{line}")
+                        return '\n'.join(numbered_lines)
                     return content
                 else:
                     return f"[Binary file - content not displayed]"
@@ -367,7 +381,8 @@ def build_context(
     summarize_model: Optional[str] = None,
     ignore_patterns: Optional[List[str]] = None,
     base_directory: Optional[str] = None,
-    current_working_directory: Optional[str] = None
+    current_working_directory: Optional[str] = None,
+    include_line_numbers: bool = True
 ) -> str:
     """
     Build a context file from directories and/or specific files.
@@ -381,6 +396,7 @@ def build_context(
         ignore_patterns: Optional list of patterns to ignore
         base_directory: Optional base directory for relative path calculation
         current_working_directory: Optional current working directory for resolving relative paths
+        include_line_numbers: Whether to include line numbers in file contents
         
     Returns:
         Path to the generated context file
@@ -443,7 +459,7 @@ def build_context(
                     relative_path = file_path
             
                 # Read file content
-                file_content = read_file_content(file_path)
+                file_content = read_file_content(file_path, include_line_numbers)
                 
                 # Get language for syntax highlighting
                 language = get_file_language(file_path)

@@ -120,6 +120,10 @@ class BuildContextSchema(BaseModel):
         None, 
         description="Optional current working directory to use for resolving relative paths"
     )
+    include_line_numbers: bool = Field(
+        default=True,
+        description="Whether to include line numbers in file contents (default: True)"
+    )
 
 
 async def serve(default_models: str = DEFAULT_MODEL) -> None:
@@ -302,6 +306,8 @@ async def serve(default_models: str = DEFAULT_MODEL) -> None:
                 base_directory = arguments.get("base_directory")
                 current_working_directory = arguments.get("current_working_directory")
                 
+                include_line_numbers = arguments.get("include_line_numbers", True)
+                
                 context_file = build_context(
                     directories=directories,
                     files=files,
@@ -310,7 +316,8 @@ async def serve(default_models: str = DEFAULT_MODEL) -> None:
                     summarize_model=summarize_model,
                     ignore_patterns=ignore_patterns,
                     base_directory=base_directory,
-                    current_working_directory=current_working_directory
+                    current_working_directory=current_working_directory,
+                    include_line_numbers=include_line_numbers
                 )
                 
                 return [TextContent(

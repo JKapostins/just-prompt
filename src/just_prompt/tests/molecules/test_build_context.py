@@ -8,7 +8,7 @@ import tempfile
 import shutil
 from pathlib import Path
 from dotenv import load_dotenv
-from just_prompt.molecules.build_context import build_context, collect_files, get_file_language, should_ignore_file
+from just_prompt.molecules.build_context import build_context, collect_files, get_file_language, should_ignore_file, read_file_content
 
 # Load environment variables
 load_dotenv()
@@ -373,3 +373,84 @@ def test_empty_directory():
         assert "# Files" in content
         # Should have minimal content for empty directory
         assert len(content.strip()) < 100
+
+
+def test_build_context_with_line_numbers(temp_directory):
+    """Test context building with line numbers enabled (default)."""
+    output_file = Path(temp_directory) / "context_with_lines.md"
+    
+    result_path = build_context(
+        directories=[temp_directory],
+        output_file=str(output_file),
+        include_line_numbers=True
+    )
+    
+    assert result_path == str(output_file)
+    assert output_file.exists()
+    
+    content = output_file.read_text()
+    
+    # Check that line numbers are present in the format "   1→"
+    assert "   1→" in content
+    assert "   2→" in content
+    
+    # Check that Python file has line numbers
+    assert "def hello_world():" in content
+    # Should have line numbers before function definition
+    lines = content.split('\n')
+    python_lines = [line for line in lines if "def hello_world():" in line]
+    assert len(python_lines) > 0
+    # Check that the line with the function has a line number prefix
+    function_line = python_lines[0]
+    assert "→" in function_line
+    assert "def hello_world():" in function_line
+
+
+def test_build_context_without_line_numbers(temp_directory):
+    """Test context building with line numbers disabled."""
+    output_file = Path(temp_directory) / "context_no_lines.md"
+    
+    result_path = build_context(
+        directories=[temp_directory],
+        output_file=str(output_file),
+        include_line_numbers=False
+    )
+    
+    assert result_path == str(output_file)
+    assert output_file.exists()
+    
+    content = output_file.read_text()
+    
+    # Check that line numbers are NOT present
+    assert "→" not in content
+    
+    # Check that function is still present but without line numbers
+    assert "def hello_world():" in content
+    lines = content.split('\n')
+    python_lines = [line for line in lines if "def hello_world():" in line]
+    assert len(python_lines) > 0
+    # Check that the line with the function does NOT have a line number prefix
+    function_line = python_lines[0]
+    assert "→" not in function_line
+    assert function_line.strip() == "def hello_world():"
+
+
+def test_read_file_content_with_line_numbers(temp_directory):
+    """Test read_file_content function with line numbers."""
+    from just_prompt.molecules.build_context import read_file_content
+    
+    src_dir = Path(temp_directory) / "src"
+    main_py = src_dir / "main.py"
+    
+    # Test with line numbers enabled
+    content_with_lines = read_file_content(main_py, include_line_numbers=True)
+    lines = content_with_lines.split('\n')
+    
+    # Should have line numbers in format "   1→content"
+    assert "   1→" in lines[0]
+    assert "   2→def hello_world():" in content_with_lines
+    
+    # Test with line numbers disabled
+    content_without_lines = read_file_content(main_py, include_line_numbers=False)
+    assert "→" not in content_without_lines
+    assert "def hello_world():" in content_without_lines
