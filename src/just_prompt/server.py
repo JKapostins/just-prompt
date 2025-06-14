@@ -274,8 +274,27 @@ async def serve(default_models: str = DEFAULT_MODEL) -> None:
                 )]
                 
             elif name == JustPromptTools.BUILD_CONTEXT:
+                import json
+                
                 directories = arguments.get("directories")
                 files = arguments.get("files")
+                
+                # Fix JSON parsing issue - if directories is a string, parse it as JSON
+                if isinstance(directories, str):
+                    try:
+                        directories = json.loads(directories)
+                    except json.JSONDecodeError:
+                        # If it's not valid JSON, treat as single directory
+                        directories = [directories]
+                
+                # Fix JSON parsing issue - if files is a string, parse it as JSON  
+                if isinstance(files, str):
+                    try:
+                        files = json.loads(files)
+                    except json.JSONDecodeError:
+                        # If it's not valid JSON, treat as single file
+                        files = [files]
+                
                 output_file = arguments["output_file"]
                 overview_text = arguments.get("overview_text")
                 summarize_model = arguments.get("summarize_model")
